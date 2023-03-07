@@ -1,19 +1,18 @@
 import glob
 import json
+import math
 import os
 
 import numpy as np
 
-
-def get_model_size(model_weights_path):
-    model_size = 0
-    for filename in os.listdir(model_weights_path):
-        filesize = os.path.getsize(os.path.join(model_weights_path, filename))
-        model_size += filesize
-
-    print("Model size:", model_size)
-    return model_size
-
+# def get_model_size(model_weights_path):
+#     model_size = 0
+#     for filename in os.listdir(model_weights_path):
+#         filesize = os.path.getsize(os.path.join(model_weights_path, filename))
+#         model_size += filesize
+#
+#     print("Model size:", model_size)
+#     return model_size
 
 def get_splits_required(filesize, maximum_split_size):
     total_splits = int(filesize / maximum_split_size) + 1
@@ -46,9 +45,9 @@ def get_small_large_files(weights_path, minimum_split_size, maximum_split_size):
     return {"small": small_files, "normal": normal_files, "large": large_files}
 
 
-def split_large_files(model_name, minimum_split_size, maximum_split_size):
-    weights_path = os.path.join(model_name, "weights")
-    shards_dir = os.path.join(model_name, "shards")
+def split_large_files(model_name, model_dir, minimum_split_size, maximum_split_size):
+    weights_path = os.path.join(model_dir, model_name, "weights")
+    shards_dir = os.path.join(model_dir, model_name, "shards")
     os.makedirs(shards_dir, exist_ok=True)
     all_files = get_small_large_files(weights_path, minimum_split_size, maximum_split_size)
 
@@ -111,9 +110,9 @@ def split_large_files(model_name, minimum_split_size, maximum_split_size):
             split_index += 1
 
 
-def merge_small_files(model_name, minimum_split_size, maximum_split_size):
-    shards_dir = os.path.join(model_name, "shards")
-    final_shards_dir = os.path.join(model_name, "final_shards")
+def merge_small_files(model_name, model_dir, minimum_split_size, maximum_split_size):
+    shards_dir = os.path.join(model_dir, model_name, "shards")
+    final_shards_dir = os.path.join(model_dir, model_name, "final_shards")
     os.makedirs(final_shards_dir, exist_ok=True)
 
     all_files = glob.glob(os.path.join(shards_dir, "*"))
@@ -148,9 +147,14 @@ def merge_small_files(model_name, minimum_split_size, maximum_split_size):
     split_index += 1
 
 
-def create_shards(model_name, minimum_split_size, maximum_split_size):
-    split_large_files(model_name, minimum_split_size, maximum_split_size)
-    merge_small_files(model_name, minimum_split_size, maximum_split_size)
+def create_shards(model_name, model_dir, no_of_ainfts):
+    model_size = get_model_size(os.path.join(model_dir, model_name))
+    maximum_split_size = math.ceil(model_size/no_of_ainfts)
+    minimum_split_size = math.floor(model_size/no_of_ainfts)
+    print(model_size, maximum_split_size, minimum_split_size)
+
+    split_large_files(model_name, model_dir, minimum_split_size, maximum_split_size)
+    merge_small_files(model_name, model_dir, minimum_split_size, maximum_split_size)
 
 
 def get_total_size(weights_dict):
@@ -159,3 +163,12 @@ def get_total_size(weights_dict):
         total += np.array(value).nbytes
 
     return total
+
+
+def get_model_size(model_dir):
+    files = glob.glob(os.path.join(model_dir, "weights/*"))
+    total_size = 0
+    for file in files:
+        total_size += os.path.getsize(file)
+
+    return total_size

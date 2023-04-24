@@ -48,8 +48,8 @@ Models
 """
 
 
-class AINFTProject(db.Model, SerializerMixin):
-    __tablename__ = 'ainft_project'
+class AIProject(db.Model, SerializerMixin):
+    __tablename__ = 'ai_project'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True, nullable=False)
     model_dir = db.Column(db.String)
@@ -58,8 +58,18 @@ class AINFTProject(db.Model, SerializerMixin):
     created_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
 
+class SmartContract(db.Model, SerializerMixin):
+    __tablename__ = "smart_contract"
+    id = db.Column(db.Integer, primary_key=True)
+    address = db.Column(db.String, nullable=False)
+    chain = db.Column(db.String, nullable=False)
+    projectId = db.Column(db.Integer, nullable=False)
+    compiledContractPath = db.Column(db.String, nullable=False)
+    created_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+
 class AINFT(db.Model, SerializerMixin):
-    __tablename__ = 'ainft'
+    __tablename__ = 'ai_nft'
     id = db.Column(db.Integer, primary_key=True)
     projectId = db.Column(db.Integer, nullable=False)
     fileName = db.Column(db.String, unique=True, nullable=False)
@@ -86,9 +96,9 @@ def project_api():
         # Create AI NFT Project
         model_name = slugify(name)
         model_dir = os.path.join(app.config['MODEL_FOLDER'], model_name)
-        project = db.session.execute(db.select(AINFTProject).where(AINFTProject.name == name)).all()
+        project = db.session.execute(db.select(AIProject).where(AIProject.name == name)).all()
         if len(project) == 0:
-            project1 = AINFTProject(name=name, model_dir=model_dir, no_of_ainfts=no_of_ainfts)
+            project1 = AIProject(name=name, model_dir=model_dir, no_of_ainfts=no_of_ainfts)
             db.session.add(project1)
             db.session.commit()
         else:
@@ -122,7 +132,7 @@ def project_api():
         project_id = request.args.get('id', None)
         if project_id is None:
             return jsonify({"status": "failure", "message": "Project id is missing"})
-        ainft_project = AINFTProject.query.filter_by(id=project_id).first()
+        ainft_project = AIProject.query.filter_by(id=project_id).first()
         return jsonify({"status": "success", "project": ainft_project.to_dict()})
     else:
         return jsonify({"status": "failure", "message": "Invalid request"})
@@ -131,7 +141,7 @@ def project_api():
 @app.route("/projects", methods=["get"])
 def get_projects():
     if request.method == "GET":
-        ainft_projects = [project.to_dict() for project in AINFTProject.query.order_by(AINFTProject.created_date.desc())]
+        ainft_projects = [project.to_dict() for project in AIProject.query.order_by(AIProject.created_date.desc())]
         return {"status": "success", "projects": ainft_projects}
     else:
         return jsonify({"status": "failure", "message": "Invalid request"})
@@ -180,4 +190,4 @@ def allowed_file(filename):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=5001)

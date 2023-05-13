@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import datetime
 import glob
 import os
@@ -15,7 +19,7 @@ from aigenml.utils import slugify
 
 UPLOAD_FOLDER = 'uploads'
 MODEL_ALLOWED_EXTENSIONS = {'h5'}
-IMAGE_ALLOWED_EXTENIONS = {'jpg','png','webp'}
+IMAGE_ALLOWED_EXTENTIONS = {'jpg', 'png', 'webp'}
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -30,7 +34,7 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
     app.config['MODEL_FOLDER'] = MODELS_DIR
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000 * 1000
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////home/satvik/aigen-main/aigen.db"
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI")
     db.init_app(app)
     migrate.init_app(app, db)
 
@@ -105,7 +109,8 @@ def project_api():
         model_dir = os.path.join(app.config['MODEL_FOLDER'], model_name)
         project = db.session.execute(db.select(AIProject).where(AIProject.name == name)).all()
         if len(project) == 0:
-            project1 = AIProject(name=name, description= description, model_dir=model_dir, no_of_ainfts=no_of_ainfts, project_price = project_price, price_per_nft = price_per_nft)
+            project1 = AIProject(name=name, description=description, model_dir=model_dir, no_of_ainfts=no_of_ainfts,
+                                 project_price=project_price, price_per_nft=price_per_nft)
             db.session.add(project1)
             db.session.commit()
         else:
@@ -114,7 +119,8 @@ def project_api():
         response = save_files(request)
         if response['status'] == "success":
             # load it and save weights
-            save_model(model_name=model_name, model_dir=app.config['MODEL_FOLDER'], model_path=response['model_file_path'])
+            save_model(model_name=model_name, model_dir=app.config['MODEL_FOLDER'],
+                       model_path=response['model_file_path'])
             create_shards(model_name=model_name, model_dir=app.config['MODEL_FOLDER'], no_of_ainfts=no_of_ainfts)
             print('Model saved')
 
@@ -166,17 +172,16 @@ def get_project_ainft():
     else:
         return jsonify({"status": "failure", "message": "Invalid request"})
 
+
 def save_files(request):
     model_file_status = save_model_file(request)
     logo_file_status = save_logo_file(request)
     banner_file_status = save_banner_file(request)
-    if model_file_status['status'] == "success" and logo_file_status['status'] == "success" and banner_file_status['status'] == "success":
-        return {"status": "success", "message": "All File uploaded", "model_file_path" : model_file_status['file_path']}
+    if model_file_status['status'] == "success" and logo_file_status['status'] == "success" and banner_file_status[
+        'status'] == "success":
+        return {"status": "success", "message": "All File uploaded", "model_file_path": model_file_status['file_path']}
     else:
         return {"status": "failure", "message": "Issue In uploading Files"}
-
-
-
 
 
 def save_model_file(request):
@@ -203,6 +208,7 @@ def save_model_file(request):
         print("Unsupported type")
         return {"status": "failure", "message": "Unsupported file type"}
 
+
 def save_logo_file(request):
     # check if the post request has the file part
     #  Save Logo File , Model File , banner File
@@ -226,6 +232,7 @@ def save_logo_file(request):
     else:
         print("Unsupported type")
         return {"status": "failure", "message": "Unsupported file type"}
+
 
 def save_banner_file(request):
     # check if the post request has the file part
@@ -255,9 +262,11 @@ def save_banner_file(request):
 def allowed_model_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in MODEL_ALLOWED_EXTENSIONS
+
+
 def allowed_image_file(filename):
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in IMAGE_ALLOWED_EXTENIONS
+           filename.rsplit('.', 1)[1].lower() in IMAGE_ALLOWED_EXTENTIONS
 
 
 if __name__ == '__main__':

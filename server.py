@@ -1,3 +1,4 @@
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,7 +20,7 @@ from aigenml.utils import slugify
 
 UPLOAD_FOLDER = 'uploads'
 MODEL_ALLOWED_EXTENSIONS = {'h5'}
-IMAGE_ALLOWED_EXTENTIONS = {'jpg', 'png', 'webp'}
+IMAGE_ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -63,6 +64,9 @@ class AIProject(db.Model, SerializerMixin):
     price_per_nft = db.Column(db.Integer)
     no_of_ainfts = db.Column(db.Integer)
     status = db.Column(db.String)
+    account = db.Column(db.String)
+    logo = db.Column(db.String)
+    banner = db.Column(db.String)
     created_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
 
@@ -102,15 +106,19 @@ def project_api():
         description = request.form['description']
         project_price = request.form['projectPrice']
         price_per_nft = request.form['pricePerNFT']
+        account = request.form['account']
         no_of_ainfts = int(request.form['no_of_ainfts'])
 
         # Create AI NFT Project
         model_name = slugify(name)
         model_dir = os.path.join(app.config['MODEL_FOLDER'], model_name)
+        logo_link = save_image_to_NFTSTORAGE(request,'logo_file')
+        banner_link = save_image_to_NFTSTORAGE(request, 'banner_file')
         project = db.session.execute(db.select(AIProject).where(AIProject.name == name)).all()
+
         if len(project) == 0:
             project1 = AIProject(name=name, description=description, model_dir=model_dir, no_of_ainfts=no_of_ainfts,
-                                 project_price=project_price, price_per_nft=price_per_nft)
+                                 project_price=project_price, price_per_nft=price_per_nft, logo= logo_link, banner= banner_link, account=account)
             db.session.add(project1)
             db.session.commit()
         else:
@@ -174,33 +182,32 @@ def get_project_ainft():
 
 
 def save_files(request):
-    model_file_status = save_model_file(request)
-    logo_file_status = save_logo_file(request)
-    banner_file_status = save_banner_file(request)
+    model_file_status = save_file(request,'model_file')
+    logo_file_status = save_file(request,'logo_file')
+    banner_file_status = save_file(request,'banner_file')
     if model_file_status['status'] == "success" and logo_file_status['status'] == "success" and banner_file_status[
         'status'] == "success":
         return {"status": "success", "message": "All File uploaded", "model_file_path": model_file_status['file_path']}
     else:
         return {"status": "failure", "message": "Issue In uploading Files"}
 
-
-def save_model_file(request):
+def save_file(request,file_type):
     # check if the post request has the file part
     #  Save Logo File , Model File , banner File
-    if 'model_file' not in request.files:
+    if file_type not in request.files:
         flash('No file part')
         print('No file part')
         return {"status": "failure", "message": "No file found"}
-    model_file = request.files['model_file']
+    file = request.files[file_type]
     # If the user does not select a file, the browser submits an empty file without a filename.
-    if model_file.filename == '':
+    if file.filename == '':
         flash('No selected file')
         print("No selected file")
         return {"status": "failure", "message": "No file found"}
 
-    if model_file and allowed_model_file(model_file.filename):
-        filename = secure_filename(model_file.filename)
-        model_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    if file and allowed_file(file.filename,file_type):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         print(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         return {"status": "success", "message": "Model File uploaded",
                 "file_path": os.path.join(app.config['UPLOAD_FOLDER'], filename)}
@@ -208,65 +215,39 @@ def save_model_file(request):
         print("Unsupported type")
         return {"status": "failure", "message": "Unsupported file type"}
 
+def save_image_to_NFTSTORAGE(request,file_type):
+    file = request.files[file_type]
+    url = 'https://api.nft.storage/upload'
+    NFTSTORAGE_API_KEY = os.environ.get('NFT_STORAGE_KEY')
+    headers = {
+        'Authorization': f'Bearer {NFTSTORAGE_API_KEY}',
+    }
+    files = {
+        'file': (file.filename, file.stream, file.content_type)
+    }
+    response = requests.post(url, headers=headers, files=files)
 
-def save_logo_file(request):
-    # check if the post request has the file part
-    #  Save Logo File , Model File , banner File
-    if 'logo_file' not in request.files:
-        flash('No file part')
-        print('No file part')
-        return {"status": "failure", "message": "No file found"}
-    logo_file = request.files['logo_file']
-    # If the user does not select a file, the browser submits an empty file without a filename.
-    if logo_file.filename == '':
-        flash('No selected file')
-        print("No selected file")
-        return {"status": "failure", "message": "No file found"}
-
-    if logo_file and allowed_image_file(logo_file.filename):
-        filename = secure_filename(logo_file.filename)
-        logo_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        print(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return {"status": "success", "message": "Logo File uploaded",
-                "file_path": os.path.join(app.config['UPLOAD_FOLDER'], filename)}
+    if response.status_code == 200:
+        json_data = response.json()
+        cid = json_data['value']['cid']
+        link = f"https://ipfs.io/ipfs/{cid}/{file.filename}"
+        return link
     else:
-        print("Unsupported type")
-        return {"status": "failure", "message": "Unsupported file type"}
+        return 'Upload failed'
 
 
-def save_banner_file(request):
-    # check if the post request has the file part
-    #  Save Logo File , Model File , banner File
-    if 'banner_file' not in request.files:
-        flash('No file part')
-        print('No file part')
-        return {"status": "failure", "message": "No file found"}
-    banner_file = request.files['banner_file']
-    # If the user does not select a file, the browser submits an empty file without a filename.
-    if banner_file.filename == '':
-        flash('No selected file')
-        print("No selected file")
-        return {"status": "failure", "message": "No file found"}
 
-    if banner_file and allowed_image_file(banner_file.filename):
-        filename = secure_filename(banner_file.filename)
-        banner_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        print(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return {"status": "success", "message": "Banner File uploaded",
-                "file_path": os.path.join(app.config['UPLOAD_FOLDER'], filename)}
+
+
+def allowed_file(filename,file_type):
+    if file_type == 'model_file':
+        return '.' in filename and \
+            filename.rsplit('.', 1)[1].lower() in MODEL_ALLOWED_EXTENSIONS
     else:
-        print("Unsupported type")
-        return {"status": "failure", "message": "Unsupported file type"}
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in IMAGE_ALLOWED_EXTENSIONS
 
 
-def allowed_model_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in MODEL_ALLOWED_EXTENSIONS
-
-
-def allowed_image_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in IMAGE_ALLOWED_EXTENTIONS
 
 
 if __name__ == '__main__':

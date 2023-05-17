@@ -8,3 +8,4 @@ Flask-SQLAlchemy
 Flask-Migrate
 SQLAlchemy-serializer
 python-dotenv
+uwsgi

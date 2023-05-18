@@ -1,5 +1,8 @@
+import re
+
 import requests
 from dotenv import load_dotenv
+from sqlalchemy import Update
 
 load_dotenv()
 
@@ -17,6 +20,7 @@ from werkzeug.utils import secure_filename
 from aigenml import save_model, create_shards
 from aigenml.config import MODELS_DIR
 from aigenml.utils import slugify
+import  json
 
 UPLOAD_FOLDER = 'uploads'
 MODEL_ALLOWED_EXTENSIONS = {'h5'}
@@ -90,6 +94,15 @@ class AINFT(db.Model, SerializerMixin):
     format = db.Column(db.String, nullable=True)
     tokenId = db.Column(db.String, nullable=True)
     status = db.Column(db.String, default="pending")
+    created_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+class UserDetails(db.Model, SerializerMixin):
+    __tablename__ = 'user_details'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String, default="User")
+    address = db.Column(db.String, nullable=False)
+    profilePicture = db.Column(db.String, nullable=True)
+    banner = db.Column(db.String, nullable=True)
     created_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
 
@@ -167,6 +180,85 @@ def get_projects():
     else:
         return jsonify({"status": "failure", "message": "Invalid request"})
 
+@app.route("/profile", methods=["get","post"])
+def profile_function():
+    if request.method == "GET":
+        address = request.args.get('address', None)
+
+        profile = db.session.execute(db.select(UserDetails).where(UserDetails.address == address)).all()
+
+        if len(profile) == 0:
+            profile1 = UserDetails(address=address)
+            db.session.add(profile1)
+            db.session.commit()
+
+        profile = [profile.to_dict() for profile in UserDetails.query.filter_by(address=address).all()]
+        return {"status": "success", "profile": profile}
+    elif request.method == "POST":
+        address = request.form.get('address',None)
+        file_type = request.form.get('file_type',None)
+        username = request.form.get('username',None)
+        if file_type == 'banner_file':
+            banner_link = save_image_to_NFTSTORAGE(request,file_type)
+            profile = [profile.to_dict() for profile in UserDetails.query.filter_by(address=address).all()]
+            prev_banner_link = profile[0].get('banner',None)
+            if prev_banner_link:
+                pattern = r"https://ipfs.io/ipfs/([^/]+)/"
+                match = re.search(pattern, prev_banner_link)
+
+                if match:
+                    cid = match.group(1)
+                    delete_file_from_NFT_STORAGE(cid)
+                else:
+                    print("CID not found in the link.")
+
+            update_statement = (
+                Update(UserDetails)
+                .where(UserDetails.address == address)
+                .values(banner=banner_link)
+            )
+
+            db.session.execute(update_statement)
+            db.session.commit()
+            return {"status": "success", "banner": banner_link}
+        if file_type == 'profile_picture_file':
+            profile_picture_link = save_image_to_NFTSTORAGE(request,file_type)
+            profile = [profile.to_dict() for profile in UserDetails.query.filter_by(address=address).all()]
+            prev_profile_picture_link = profile[0].get('profilePicture', None)
+            if prev_profile_picture_link:
+                pattern = r"https://ipfs.io/ipfs/([^/]+)/"
+                match = re.search(pattern, prev_profile_picture_link)
+
+                if match:
+                    cid = match.group(1)
+                    delete_file_from_NFT_STORAGE(cid)
+                else:
+                    print("CID not found in the link.")
+            update_statement = (
+                Update(UserDetails)
+                .where(UserDetails.address == address)
+                .values(profilePicture=profile_picture_link)
+            )
+
+            db.session.execute(update_statement)
+            db.session.commit()
+            return {"status": "success", "profile_picture": profile_picture_link}
+        if username:
+            update_statement = (
+                Update(UserDetails)
+                .where(UserDetails.address == address)
+                .values(username=username)
+            )
+
+            db.session.execute(update_statement)
+            db.session.commit()
+            return {"status": "success", "username": username}
+
+        return jsonify({"status": "failure", "message": "Invalid request"})
+
+    else:
+        return jsonify({"status": "failure", "message": "Invalid request"})
+
 
 @app.route("/project/ainft", methods=["get"])
 def get_project_ainft():
@@ -235,7 +327,23 @@ def save_image_to_NFTSTORAGE(request,file_type):
     else:
         return 'Upload failed'
 
+def delete_file_from_NFT_STORAGE(cid):
+    NFTSTORAGE_API_KEY = os.environ.get('NFT_STORAGE_KEY')
 
+    if not cid:
+        return 'CID is missing.', 400
+
+    headers = {
+        'Authorization': f'Bearer {NFTSTORAGE_API_KEY}',
+    }
+
+    delete_url = f'https://api.nft.storage/{cid}'
+    response = requests.delete(delete_url, headers=headers)
+
+    if response.status_code == 200:
+        return 'File deleted successfully.'
+    else:
+        return f'Error deleting file: {response.text}', response.status_code
 
 
 

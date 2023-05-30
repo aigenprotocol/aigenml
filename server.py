@@ -110,58 +110,88 @@ class UserDetails(db.Model, SerializerMixin):
 def home():
     return {"status": "success", "message": "Hello, World"}
 
+@app.route("/project/create_nft", methods=["post"])
+def create_project_NFT():
+    if request.method == 'POST':
+        print(request.data, request.form)
+        id = request.form['id']
+        project = db.session.query(AIProject).filter(AIProject.id == id).first()
+        print(project)
+        project_price = request.form['projectPrice']
+        price_per_nft = request.form['pricePerNFT']
+        no_of_ainfts = int(request.form['no_of_ainfts'])
+        # Create AI NFT Project
+        model_name = slugify(project.name)
+        model_dir = os.path.join(app.config['MODEL_FOLDER'], model_name)
 
+
+
+        # Check if the project exists
+        if project:
+            # Update the project with the new parameters
+            project.model_dir = model_dir
+            project.no_of_ainfts = no_of_ainfts
+            project.project_price = project_price
+            project.price_per_nft = price_per_nft
+
+            # Commit the changes to the database
+            db.session.commit()
+
+        else:
+            return jsonify({"status": "failure", "message": "Project Does Not exists!"})
+
+        response = save_files(request)
+        if response['status'] == "success":
+        #     # load it and save weights
+            save_model(model_name=model_name, model_dir=app.config['MODEL_FOLDER'],
+                       model_path=response['model_file_path'])
+            create_shards(model_name=model_name, model_dir=app.config['MODEL_FOLDER'], no_of_ainfts=no_of_ainfts)
+            print('Model saved')
+        #
+            # Create AI NFT in the database
+            model_dir = project.model_dir
+            files = glob.glob(os.path.join(model_dir, "final_shards/*"))
+            for filename in files:
+                ainft = AINFT(fileName=os.path.join("final_shards", os.path.basename(filename)), projectId=project.id)
+                db.session.add(ainft)
+                db.session.commit()
+        #
+            # Config file
+            ainft1 = AINFT(fileName=model_name + "_config.json", projectId=project.id)
+            db.session.add(ainft1)
+            db.session.commit()
+        #
+            project.status = "Model Saved"
+            db.session.commit()
+            return jsonify({"status": "success", "message": "Model saved and shards created",
+                            "project_id": project.id})
+        else:
+            return response
+    else:
+        return jsonify({"status": "failure", "message": "Invalid request"})
 @app.route("/project", methods=["get", "post"])
 def project_api():
     if request.method == 'POST':
         print(request.data, request.form)
         name = request.form['name']
         description = request.form['description']
-        project_price = request.form['projectPrice']
-        price_per_nft = request.form['pricePerNFT']
         account = request.form['account']
-        no_of_ainfts = int(request.form['no_of_ainfts'])
 
         # Create AI NFT Project
-        model_name = slugify(name)
-        model_dir = os.path.join(app.config['MODEL_FOLDER'], model_name)
+        # model_name = slugify(name)
+        # model_dir = os.path.join(app.config['MODEL_FOLDER'], model_name)
         logo_link = save_image_to_NFTSTORAGE(request,'logo_file')
         banner_link = save_image_to_NFTSTORAGE(request, 'banner_file')
         project = db.session.execute(db.select(AIProject).where(AIProject.name == name)).all()
 
         if len(project) == 0:
-            project1 = AIProject(name=name, description=description, model_dir=model_dir, no_of_ainfts=no_of_ainfts,
-                                 project_price=project_price, price_per_nft=price_per_nft, logo= logo_link, banner= banner_link, account=account)
+            project1 = AIProject(name=name, description=description, logo= logo_link, banner= banner_link, account=account ,status ="Created")
             db.session.add(project1)
             db.session.commit()
+            return jsonify({"status": "success", "message": "Project Created Successfully"})
         else:
             return jsonify({"status": "failure", "message": "Project already exists!"})
 
-        response = save_files(request)
-        if response['status'] == "success":
-            # load it and save weights
-            save_model(model_name=model_name, model_dir=app.config['MODEL_FOLDER'],
-                       model_path=response['model_file_path'])
-            create_shards(model_name=model_name, model_dir=app.config['MODEL_FOLDER'], no_of_ainfts=no_of_ainfts)
-            print('Model saved')
-
-            # Create AI NFT in the database
-            model_dir = project1.model_dir
-            files = glob.glob(os.path.join(model_dir, "final_shards/*"))
-            for filename in files:
-                ainft = AINFT(fileName=os.path.join("final_shards", os.path.basename(filename)), projectId=project1.id)
-                db.session.add(ainft)
-                db.session.commit()
-
-            # Config file
-            ainft1 = AINFT(fileName=model_name + "_config.json", projectId=project1.id)
-            db.session.add(ainft1)
-            db.session.commit()
-
-            return jsonify({"status": "success", "message": "Model saved and shards created",
-                            "project_id": project1.id})
-        else:
-            return response
     elif request.method == "GET":
         project_id = request.args.get('id', None)
         if project_id is None:
@@ -275,11 +305,8 @@ def get_project_ainft():
 
 def save_files(request):
     model_file_status = save_file(request,'model_file')
-    logo_file_status = save_file(request,'logo_file')
-    banner_file_status = save_file(request,'banner_file')
-    if model_file_status['status'] == "success" and logo_file_status['status'] == "success" and banner_file_status[
-        'status'] == "success":
-        return {"status": "success", "message": "All File uploaded", "model_file_path": model_file_status['file_path']}
+    if model_file_status['status'] == "success" :
+        return {"status": "success", "message": "Model File uploaded", "model_file_path": model_file_status['file_path']}
     else:
         return {"status": "failure", "message": "Issue In uploading Files"}
 

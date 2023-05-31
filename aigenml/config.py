@@ -1,1 +1,1 @@
-MODELS_DIR = "/Users/apple/aigen/models"
+MODELS_DIR = "/home/satvik/aigen-main/models"

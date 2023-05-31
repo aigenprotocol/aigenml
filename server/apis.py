@@ -6,17 +6,18 @@ from flask import request, jsonify
 from sqlalchemy import Update
 
 from aigenml import save_model, create_shards
-from .globals import globals as g
 from server.models import AIProject, AINFT, UserDetails
 from server.nftstorage import save_image_to_NFTSTORAGE, delete_file_from_NFT_STORAGE
 from server.utils import slugify, save_files
+from .globals import globals as g
+
 
 @g.app.route("/")
 def home():
     return {"status": "success", "message": "Hello, World"}
 
 
-@g.app.route("/project/create_nft", methods=["post"])
+@g.app.route("/project/ainft", methods=["post", "get"])
 def create_project_NFT():
     if request.method == 'POST':
         print(request.data, request.form)
@@ -71,6 +72,13 @@ def create_project_NFT():
                             "project_id": project.id})
         else:
             return response
+    elif request.method == "GET":
+        project_id = request.args.get('id', None)
+        print(request.args)
+        if project_id is None:
+            return jsonify({"status": "failure", "message": "Project id is missing"})
+        ainfts = [ainft.to_dict() for ainft in AINFT.query.filter_by(projectId=project_id).all()]
+        return {"status": "success", "ainfts": ainfts}
     else:
         return jsonify({"status": "failure", "message": "Invalid request"})
 
@@ -82,10 +90,6 @@ def project_api():
         name = request.form['name']
         description = request.form['description']
         account = request.form['account']
-
-        # Create AI NFT Project
-        # model_name = slugify(name)
-        # model_dir = os.path.join(app.config['MODEL_FOLDER'], model_name)
         logo_link = save_image_to_NFTSTORAGE(request, 'logo_file')
         banner_link = save_image_to_NFTSTORAGE(request, 'banner_file')
         project = g.db.session.execute(g.db.select(AIProject).where(AIProject.name == name)).all()
@@ -101,19 +105,14 @@ def project_api():
 
     elif request.method == "GET":
         project_id = request.args.get('id', None)
+        account = request.args.get('account', None)
+        print(id, account)
         if project_id is None:
-            return jsonify({"status": "failure", "message": "Project id is missing"})
+            ainft_projects = [project.to_dict() for project in
+                              AIProject.query.filter_by(account=account).order_by(AIProject.created_date.desc())]
+            return {"status": "success", "projects": ainft_projects}
         ainft_project = AIProject.query.filter_by(id=project_id).first()
         return jsonify({"status": "success", "project": ainft_project.to_dict()})
-    else:
-        return jsonify({"status": "failure", "message": "Invalid request"})
-
-
-@g.app.route("/projects", methods=["get"])
-def get_projects():
-    if request.method == "GET":
-        ainft_projects = [project.to_dict() for project in AIProject.query.order_by(AIProject.created_date.desc())]
-        return {"status": "success", "projects": ainft_projects}
     else:
         return jsonify({"status": "failure", "message": "Invalid request"})
 
@@ -152,8 +151,8 @@ def profile_function():
 
             update_statement = (
                 Update(UserDetails)
-                    .where(UserDetails.address == address)
-                    .values(banner=banner_link)
+                .where(UserDetails.address == address)
+                .values(banner=banner_link)
             )
 
             g.db.session.execute(update_statement)
@@ -174,8 +173,8 @@ def profile_function():
                     print("CID not found in the link.")
             update_statement = (
                 Update(UserDetails)
-                    .where(UserDetails.address == address)
-                    .values(profilePicture=profile_picture_link)
+                .where(UserDetails.address == address)
+                .values(profilePicture=profile_picture_link)
             )
 
             g.db.session.execute(update_statement)
@@ -184,8 +183,8 @@ def profile_function():
         if username:
             update_statement = (
                 Update(UserDetails)
-                    .where(UserDetails.address == address)
-                    .values(username=username)
+                .where(UserDetails.address == address)
+                .values(username=username)
             )
 
             g.db.session.execute(update_statement)
@@ -194,18 +193,5 @@ def profile_function():
 
         return jsonify({"status": "failure", "message": "Invalid request"})
 
-    else:
-        return jsonify({"status": "failure", "message": "Invalid request"})
-
-
-@g.app.route("/project/ainft", methods=["get"])
-def get_project_ainft():
-    if request.method == "GET":
-        project_id = request.args.get('id', None)
-        print(request.args)
-        if project_id is None:
-            return jsonify({"status": "failure", "message": "Project id is missing"})
-        ainfts = [ainft.to_dict() for ainft in AINFT.query.filter_by(projectId=project_id).all()]
-        return {"status": "success", "ainfts": ainfts}
     else:
         return jsonify({"status": "failure", "message": "Invalid request"})

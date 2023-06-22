@@ -1,0 +1,13 @@
+[Unit]
+Description=uWSGI instance to AigenML project
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/aigenml
+Environment="PATH=/home/ubuntu/aigenml/venv/bin"
+ExecStart=/home/ubuntu/aigenml/venv/bin/uwsgi --ini aigenml.ini
+
+[Install]
+WantedBy=multi-user.target

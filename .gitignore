@@ -1,5 +1,2 @@
 .env
 .idea
-build
-dist
-uploads

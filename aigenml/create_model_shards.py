@@ -1,23 +1,34 @@
 import glob
 import json
 import math
+import numpy as np
 import os
 
-import numpy as np
+from aigenml import save_model
 
-# def get_model_size(model_weights_path):
-#     model_size = 0
-#     for filename in os.listdir(model_weights_path):
-#         filesize = os.path.getsize(os.path.join(model_weights_path, filename))
-#         model_size += filesize
-#
-#     print("Model size:", model_size)
-#     return model_size
 
-def get_splits_required(filesize, maximum_split_size):
-    total_splits = int(filesize / maximum_split_size) + 1
-    print("Total splits:", total_splits)
-    return total_splits
+def get_total_size(weights_dict):
+    total = 0
+    for key, value in weights_dict.items():
+        total += np.array(value).nbytes
+
+    return total
+
+
+def get_model_size(model_dir):
+    files = glob.glob(os.path.join(model_dir, "weights/*"))
+    total_size = 0
+    for file in files:
+        total_size += os.path.getsize(file)
+
+    return total_size
+
+
+def save_model_create_shards(model_name, model_dir,
+                             model_path, no_of_ainfts):
+    save_model(model_name=model_name, model_dir=model_dir,
+               model_path=model_path)
+    create_shards(model_name=model_name, model_dir=model_dir, no_of_ainfts=no_of_ainfts)
 
 
 def get_small_large_files(weights_path, minimum_split_size, maximum_split_size):
@@ -52,13 +63,14 @@ def split_large_files(model_name, model_dir, minimum_split_size, maximum_split_s
     all_files = get_small_large_files(weights_path, minimum_split_size, maximum_split_size)
 
     split_index = 1
-    print("Splitting large files...")
+    print("")
+    print("Sharding large files...")
     # split large files
     for i, large_file in enumerate(all_files['large']):
-        print("Large files processed:{}, total:{}".format(i + 1, len(all_files['large'])))
+        print("Processed:{}, total:{}".format(i + 1, len(all_files['large'])))
         filesize = os.path.getsize(large_file)
         with open(large_file, "r") as f:
-            print("Large file:", large_file)
+            # print("Large file:", large_file)
             layer_weights = json.load(f)
 
             for layer_dict in layer_weights:
@@ -96,13 +108,14 @@ def split_large_files(model_name, model_dir, minimum_split_size, maximum_split_s
                             split_index += 1
                             shard_no += 1
 
-    print("Saving normal and small files...")
+    print("")
+    print("Processing normal files...")
     # Save normal files as it is
     remaining_files = all_files['normal']
     remaining_files.extend(all_files['small'])
 
     for i, normal_file in enumerate(remaining_files):
-        print("Normal files processed:{}, total:{}".format(i + 1, len(remaining_files)))
+        print("Processed:{}, total:{}".format(i + 1, len(remaining_files)))
         with open(normal_file, "r") as f:
             weights = json.load(f)
             with open("{}/{}_shard_{}.json".format(shards_dir, model_name, split_index), "w") as fp:
@@ -119,10 +132,11 @@ def merge_small_files(model_name, model_dir, minimum_split_size, maximum_split_s
 
     split_index = 1
     # merge small files
+    print("")
     print("Merging small files...")
     merge_files_sizes = {}
     for i, small_file in enumerate(all_files):
-        print("Small files processed:{}, total:{}".format(i + 1, len(all_files)))
+        print("Processed:{}, total:{}".format(i + 1, len(all_files)))
         filesize = os.path.getsize(small_file)
         if sum(merge_files_sizes.values()) + filesize > maximum_split_size:
             merge_files_sizes[small_file] = filesize
@@ -148,27 +162,10 @@ def merge_small_files(model_name, model_dir, minimum_split_size, maximum_split_s
 
 
 def create_shards(model_name, model_dir, no_of_ainfts):
+    print("Creating shards")
     model_size = get_model_size(os.path.join(model_dir, model_name))
-    maximum_split_size = math.ceil(model_size/no_of_ainfts)
-    minimum_split_size = math.floor(model_size/no_of_ainfts)
-    print(model_size, maximum_split_size, minimum_split_size)
+    maximum_split_size = math.ceil(model_size / no_of_ainfts)
+    minimum_split_size = math.floor(model_size / no_of_ainfts)
 
     split_large_files(model_name, model_dir, minimum_split_size, maximum_split_size)
     merge_small_files(model_name, model_dir, minimum_split_size, maximum_split_size)
-
-
-def get_total_size(weights_dict):
-    total = 0
-    for key, value in weights_dict.items():
-        total += np.array(value).nbytes
-
-    return total
-
-
-def get_model_size(model_dir):
-    files = glob.glob(os.path.join(model_dir, "weights/*"))
-    total_size = 0
-    for file in files:
-        total_size += os.path.getsize(file)
-
-    return total_size

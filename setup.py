@@ -17,12 +17,7 @@ setup(
     url='https://github.com/aigenprotocol/aigenml',
     keywords='Aigen machine learning libray',
     install_requires=[
-        "tensorflow==2.11.0",
-        "pandas",
-        "flask",
-        "flask-cors",
-        "Flask-SQLAlchemy",
-        "Flask-Migrate",
-        "SQLAlchemy-serializer"
+        "tensorflow==2.13.0",
+        "pandas"
     ]
 )

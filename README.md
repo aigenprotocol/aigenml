@@ -1,24 +1,45 @@
 <div align="center">
-    <h1> AigenML - Aigen's Machine Learning Repository </h1>
+<h2> AigenML </h2>
+<h3>
+Aigen's artificial intelligence library to extract model weights and create shards based on the number of ainfts specified
+</h3>
 </div>
 
+## create environment variables
 
-## Run flask server
+#### create a .env file and put these variables
 
 ```
-python server.py
+MODELS_DIR=/Users/apple/aigenml
 ```
 
-#### Database commands 
+## commands
 
-````
-flask --app server db init
-flask --app server db migrate -m "Migrate message"
-flask --app server db upgrade
-````
+#### extract model weights and create shards in a single command
 
-#### How to run the uWSGI server
+```
+python main.py -n "My Project" -m "<path-to-model.h5>" -no 20
+```
 
-````
-uwsgi --socket 0.0.0.0:5001 --protocol=http -w wsgi:app
-````
+provide model name, model path and no of ainfts in a single command
+
+## code
+
+### extract and save model weights
+
+```
+from aigenml import save_model
+save_model(model_name=model_name, model_dir=MODELS_DIR, model_path=model_path)
+```
+
+provide model name and local model path to start extracting weights
+
+### create shards of model weights
+
+```
+from aigenml import create_shards
+create_shards(model_name=model_name, model_dir=MODELS_DIR, no_of_ainfts=no_of_ainfts)
+```
+
+provide model name and no of ainfts to create. This function will automatically create shards of model weights
+

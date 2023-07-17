@@ -1,10 +1,10 @@
-import json
 import os.path
-import re
-import unicodedata
 
+import json
 import numpy as np
+import re
 import tensorflow as tf
+import unicodedata
 
 
 def get_keys(filepaths):
@@ -80,6 +80,27 @@ def slugify(value, allow_unicode=False):
         value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
     value = re.sub(r'[^\w\s-]', '', value.lower())
     return re.sub(r'[-\s]+', '-', value).strip('-_')
+
+
+def clean_dict_helper(d):
+    if isinstance(d, np.ndarray):
+        return d.tolist()
+
+    if isinstance(d, list):  # For those db functions which return list
+        return [clean_dict_helper(x) for x in d]
+
+    if isinstance(d, dict):
+        for k, v in d.items():
+            d.update({k: clean_dict_helper(v)})
+
+    # return anything else, like a string or number
+    return d
+
+
+def get_splits_required(filesize, maximum_split_size):
+    total_splits = int(filesize / maximum_split_size) + 1
+    print("Total splits:", total_splits)
+    return total_splits
 
 
 if __name__ == '__main__':

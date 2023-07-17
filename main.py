@@ -1,24 +1,39 @@
-import numpy as np
+from dotenv import load_dotenv
 
-from aigenml import create_shards, save_model, load_model_weights, aggregate_shards, concatenate_arrays, \
-    get_keras_model, compare_weights, compare_predictions
-import tensorflow as tf
+load_dotenv()
+
+import shutil
+import argparse
+import os
+
+from aigenml.config import MODELS_DIR
+from aigenml.utils import slugify
+from aigenml import create_shards, save_model
 
 if __name__ == '__main__':
-    model_name = "mobilenet"
+    parser = argparse.ArgumentParser(prog='AigenML', description="Aigen's machine learning library to extract models "
+                                                                 "weights and create shards based on number "
+                                                                 "of ainfts specified",
+                                     epilog="Get more help at contact@aigenprotocol.com")
+    parser.add_argument('-n', '--name', help='project name')
+    parser.add_argument('-m', '--model_path', help='model path')
+    parser.add_argument('-no', '--no_of_ainfts', type=int, help='number of ainfts to create')
+    args = parser.parse_args()
 
-    # extract and create shards
-    save_model(model_name=model_name, model_dir="", model_path="")
-    create_shards(model_name=model_name, minimum_split_size=1000000, maximum_split_size=10000000)
+    model_name = slugify(args.name)
 
-    # aggregate_shards(model_name=model_name)
-    # concatenate_arrays(model_name=model_name)
+    # remove/create model directory
+    if os.path.exists(os.path.join(MODELS_DIR, model_name)):
+        shutil.rmtree(os.path.join(MODELS_DIR, model_name))
+    os.makedirs(os.path.join(MODELS_DIR, model_name), exist_ok=True)
 
-    # validate_merged_shards(model_name=model_name)
-    # model1 = get_keras_model(model_name)
-    # model = load_model_weights(model_name)
-    # print(model)
-    #
-    # print(compare_weights(model, model1))
-    # compare_predictions(model, model1)
+    # extracts and save model weights
+    save_model(model_name=model_name, model_dir=MODELS_DIR, model_path=args.model_path)
+    print("Model weights extracted successfully!")
 
+    # create shards
+    create_shards(model_name=model_name, model_dir=MODELS_DIR, no_of_ainfts=args.no_of_ainfts)
+    print("Model shards created successfully!")
+
+    print("Model name:", model_name)
+    print("Model directory:", os.path.join(MODELS_DIR, model_name))

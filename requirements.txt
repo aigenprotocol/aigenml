@@ -1,11 +1,2 @@
-tensorflow==2.11.0
-ipfs-api
-web3
+tensorflow==2.13.0
 pandas
-flask
-flask-cors
-Flask-SQLAlchemy
-Flask-Migrate
-SQLAlchemy-serializer
-python-dotenv
-uwsgi

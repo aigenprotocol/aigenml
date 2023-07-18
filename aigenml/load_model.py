@@ -6,13 +6,15 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
+from aigenml.config import MODELS_DIR
+
 
 def load_model(model_name):
     """
     Load model from config file
     :return: Keras model
     """
-    with open(os.path.join(model_name, "{}_config.json".format(model_name)), "r") as f:
+    with open(os.path.join(os.path.join(MODELS_DIR, model_name), "{}_config.json".format(model_name)), "r") as f:
         return tf.keras.Model().from_config(json.load(f))
 
 

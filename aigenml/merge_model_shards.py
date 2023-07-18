@@ -5,10 +5,12 @@ import os
 import numpy as np
 import pandas as pd
 
+from aigenml.config import MODELS_DIR
+
 
 def aggregate_shards(model_name):
-    aggregated_shards_dir = os.path.join(model_name, "aggregated_shards")
-    downloaded_shards_dir = os.path.join(model_name, "downloaded_shards")
+    aggregated_shards_dir = os.path.join(os.path.join(MODELS_DIR, model_name), "aggregated_shards")
+    downloaded_shards_dir = os.path.join(os.path.join(MODELS_DIR, model_name), "downloaded_shards")
     os.makedirs(aggregated_shards_dir, exist_ok=True)
 
     filepaths = glob.glob(os.path.join(downloaded_shards_dir, "{}_shard_*".format(model_name)))
@@ -36,8 +38,8 @@ def aggregate_shards(model_name):
 
 
 def concatenate_arrays(model_name):
-    aggregated_shards_dir = os.path.join(model_name, "aggregated_shards")
-    final_weights_dir = os.path.join(model_name, "final_weights")
+    aggregated_shards_dir = os.path.join(os.path.join(MODELS_DIR, model_name), "aggregated_shards")
+    final_weights_dir = os.path.join(os.path.join(MODELS_DIR, model_name), "final_weights")
     os.makedirs(final_weights_dir, exist_ok=True)
 
     filepaths = glob.glob(os.path.join(aggregated_shards_dir, "*"))
@@ -78,6 +80,12 @@ def concatenate_arrays(model_name):
 
                 with open(os.path.join(final_weights_dir, "{}.json".format(layer_name)), "w") as fp:
                     json.dump(layer_dict, fp)
+
+
+def merge_shards(model_name):
+    aggregate_shards(model_name)
+    concatenate_arrays(model_name)
+
 
 # def merge_shards(model_name):
 #     final_weights_dir = os.path.join(model_name, "final_weights")

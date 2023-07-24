@@ -18,7 +18,7 @@ setup(
     keywords='Aigen machine learning libray',
     install_requires=[
         "tensorflow==2.13.0",
-        "pandas"
+        "pandas",
         "python-dotenv"
     ]
 )

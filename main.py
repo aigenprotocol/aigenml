@@ -22,6 +22,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     model_name = slugify(args.name)
+
     # create model directory
     os.makedirs(os.path.join(MODELS_DIR, model_name), exist_ok=True)
 
@@ -40,9 +41,11 @@ if __name__ == '__main__':
 
         print("Model name:", model_name)
         print("Model directory:", os.path.join(MODELS_DIR, model_name))
-    if args.action == "merge_shards":
+    elif args.action == "merge_shards":
         merge_shards(args.name)
         print("Shards merged successfully!")
     elif args.action == "load_model":
         model = load_model_weights(model_name=args.name)
         print("Loaded model:", model)
+    else:
+        print("Invalid action")

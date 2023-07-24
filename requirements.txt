@@ -1,0 +1,3 @@
+tensorflow==2.13.0
+pandas
+python-dotenv

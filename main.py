@@ -46,3 +46,5 @@ if __name__ == '__main__':
     elif args.action == "load_model":
         model = load_model_weights(model_name=args.name)
         print("Loaded model:", model)
+    else:
+        print("Invalid action")

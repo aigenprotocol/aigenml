@@ -6,6 +6,11 @@ import unicodedata
 
 
 def get_model_size(model_dir):
+    """
+    Get model size
+    :param model_dir: model directory
+    :return: model size
+    """
     files = glob.glob(os.path.join(model_dir, "weights/*"))
     total_size = 0
     for file in files:

@@ -32,9 +32,9 @@ def get_small_large_files(weights_path, minimum_split_size, maximum_split_size):
     return {"small": small_files, "normal": normal_files, "large": large_files}
 
 
-def split_large_files(model_name, model_dir, minimum_split_size, maximum_split_size):
-    weights_path = os.path.join(model_dir, model_name, "weights")
-    shards_dir = os.path.join(model_dir, model_name, "shards")
+def split_large_files(project_name, project_dir, minimum_split_size, maximum_split_size):
+    weights_path = os.path.join(project_dir, project_name, "weights")
+    shards_dir = os.path.join(project_dir, project_name, "shards")
     os.makedirs(shards_dir, exist_ok=True)
     all_files = get_small_large_files(weights_path, minimum_split_size, maximum_split_size)
 
@@ -70,7 +70,7 @@ def split_large_files(model_name, model_dir, minimum_split_size, maximum_split_s
                                                                                                  "shard_no": index + 1,
                                                                                                  "values": split_array_list}]}]
 
-                            with open("{}/{}_shard_{}.json".format(shards_dir, model_name, split_index), "w") as fp:
+                            with open("{}/{}_shard_{}.json".format(shards_dir, project_name, split_index), "w") as fp:
                                 json.dump(final_shard, fp)
                                 split_index += 1
                                 shard_no += 1
@@ -79,7 +79,7 @@ def split_large_files(model_name, model_dir, minimum_split_size, maximum_split_s
                                                                                              "shard_no": shard_no,
                                                                                              "values": values}]}]
 
-                        with open("{}/{}_shard_{}.json".format(shards_dir, model_name, split_index), "w") as fp:
+                        with open("{}/{}_shard_{}.json".format(shards_dir, project_name, split_index), "w") as fp:
                             json.dump(final_shard, fp)
                             split_index += 1
                             shard_no += 1
@@ -94,14 +94,14 @@ def split_large_files(model_name, model_dir, minimum_split_size, maximum_split_s
         print("Processed:{}, total:{}".format(i + 1, len(remaining_files)))
         with open(normal_file, "r") as f:
             weights = json.load(f)
-            with open("{}/{}_shard_{}.json".format(shards_dir, model_name, split_index), "w") as fp:
+            with open("{}/{}_shard_{}.json".format(shards_dir, project_name, split_index), "w") as fp:
                 json.dump(weights, fp)
             split_index += 1
 
 
-def merge_small_files(model_name, model_dir, minimum_split_size, maximum_split_size):
-    shards_dir = os.path.join(model_dir, model_name, "shards")
-    final_shards_dir = os.path.join(model_dir, model_name, "final_shards")
+def merge_small_files(project_name, project_dir, minimum_split_size, maximum_split_size):
+    shards_dir = os.path.join(project_dir, project_name, "shards")
+    final_shards_dir = os.path.join(project_dir, project_name, "final_shards")
     os.makedirs(final_shards_dir, exist_ok=True)
 
     all_files = glob.glob(os.path.join(shards_dir, "*"))
@@ -120,7 +120,7 @@ def merge_small_files(model_name, model_dir, minimum_split_size, maximum_split_s
             for file_path, size in merge_files_sizes.items():
                 with open(file_path, "r") as f:
                     final_merge.extend(json.load(f))
-            with open("{}/{}_shard_{}.json".format(final_shards_dir, model_name, split_index), "w") as f:
+            with open("{}/{}_shard_{}.json".format(final_shards_dir, project_name, split_index), "w") as f:
                 json.dump(final_merge, f)
             split_index += 1
             merge_files_sizes = {}
@@ -132,16 +132,16 @@ def merge_small_files(model_name, model_dir, minimum_split_size, maximum_split_s
         with open(file_path, "r") as f:
             final_merge.extend(json.load(f))
 
-    with open("{}/{}_shard_{}.json".format(final_shards_dir, model_name, split_index), "w") as f:
+    with open("{}/{}_shard_{}.json".format(final_shards_dir, project_name, split_index), "w") as f:
         json.dump(final_merge, f)
     split_index += 1
 
 
-def create_shards(model_name, model_dir, no_of_ainfts):
+def create_shards(project_name, project_dir, no_of_ainfts):
     print("Creating shards")
-    model_size = get_model_size(os.path.join(model_dir, model_name))
+    model_size = get_model_size(os.path.join(project_dir, project_name))
     maximum_split_size = math.ceil(model_size / no_of_ainfts)
     minimum_split_size = math.floor(model_size / no_of_ainfts)
 
-    split_large_files(model_name, model_dir, minimum_split_size, maximum_split_size)
-    merge_small_files(model_name, model_dir, minimum_split_size, maximum_split_size)
+    split_large_files(project_name, project_dir, minimum_split_size, maximum_split_size)
+    merge_small_files(project_name, project_dir, minimum_split_size, maximum_split_size)

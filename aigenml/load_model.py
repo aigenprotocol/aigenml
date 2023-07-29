@@ -6,21 +6,19 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from aigenml.config import MODELS_DIR
 
-
-def load_model(model_name):
+def load_model(project_name):
     """
     Load model from config file
     :return: Keras model
     """
-    with open(os.path.join(os.path.join(MODELS_DIR, model_name), "{}_config.json".format(model_name)), "r") as f:
+    with open(os.path.join(os.path.join(os.environ.get("PROJECTS_DIR"), project_name), "{}_config.json".format(project_name)), "r") as f:
         return tf.keras.Model().from_config(json.load(f))
 
 
-def load_model_weights(model_name):
-    model = load_model(model_name)
-    final_weights_dir = os.path.join(model_name, "final_weights")
+def load_model_weights(project_name):
+    model = load_model(project_name)
+    final_weights_dir = os.path.join(project_name, "final_weights")
 
     filepaths = glob.glob("{}/*".format(final_weights_dir))
 

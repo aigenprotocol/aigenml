@@ -4,13 +4,11 @@ import numpy as np
 import os
 import pandas as pd
 
-from aigenml.config import MODELS_DIR
-
 
 def aggregate_shards(model_name):
     print("\nAggregating shards...")
-    aggregated_shards_dir = os.path.join(os.path.join(MODELS_DIR, model_name), "aggregated_shards")
-    downloaded_shards_dir = os.path.join(os.path.join(MODELS_DIR, model_name), "downloaded_shards")
+    aggregated_shards_dir = os.path.join(os.path.join(os.environ.get("PROJECTS_DIR"), model_name), "aggregated_shards")
+    downloaded_shards_dir = os.path.join(os.path.join(os.environ.get("PROJECTS_DIR"), model_name), "downloaded_shards")
     os.makedirs(aggregated_shards_dir, exist_ok=True)
 
     filepaths = glob.glob(os.path.join(downloaded_shards_dir, "{}_shard_*".format(model_name)))
@@ -39,8 +37,8 @@ def aggregate_shards(model_name):
 
 def concatenate_arrays(model_name):
     print("\nConcatenating arrays...")
-    aggregated_shards_dir = os.path.join(os.path.join(MODELS_DIR, model_name), "aggregated_shards")
-    final_weights_dir = os.path.join(os.path.join(MODELS_DIR, model_name), "final_weights")
+    aggregated_shards_dir = os.path.join(os.path.join(os.environ.get("PROJECTS_DIR"), model_name), "aggregated_shards")
+    final_weights_dir = os.path.join(os.path.join(os.environ.get("PROJECTS_DIR"), model_name), "final_weights")
     os.makedirs(final_weights_dir, exist_ok=True)
 
     filepaths = glob.glob(os.path.join(aggregated_shards_dir, "*"))

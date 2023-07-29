@@ -19,20 +19,16 @@ def clean_dict_helper(d):
     return d
 
 
-def save_model_architecture(model_name, model_dir, model):
+def save_model_architecture(project_name, project_dir, model):
     print("Saving model architecture")
-    # print(model.get_config())
-    with open("{}/{}/{}_config.json".format(model_dir, model_name, model_name), "w") as f:
+    with open("{}/{}/{}_config.json".format(project_dir, project_name, project_name), "w") as f:
         config = clean_dict_helper(model.get_config())
         json.dump(config, f)
 
 
-def save_model_weights(model_name, model_dir, model):
+def save_model_weights(project_name, project_dir, model):
     print("Saving model weights")
     for layer in model.layers:
-        # print("Type:", type(layer.get_weights()))
-        # print("Layer name:", layer.name)
-
         weight_format = {"layer_name": layer.name}
 
         all_weights = []
@@ -40,15 +36,15 @@ def save_model_weights(model_name, model_dir, model):
             all_weights.append({"weight_no": index + 1, "shard_no": 1, "values": weights.tolist()})
 
         weight_format['weights'] = all_weights
-        with open("{}/{}/weights/{}.json".format(model_dir, model_name, layer.name), "w") as f:
+        with open("{}/{}/weights/{}.json".format(project_dir, project_name, layer.name), "w") as f:
             json.dump([weight_format], f)
 
 
-def save_model(model_name, model_dir, model_path):
-    os.makedirs(os.path.join(model_dir, model_name), exist_ok=True)
-    os.makedirs(os.path.join(model_dir, model_name, "weights"), exist_ok=True)
+def save_model(project_name, project_dir, model_path):
+    os.makedirs(os.path.join(project_dir, project_name), exist_ok=True)
+    os.makedirs(os.path.join(project_dir, project_name, "weights"), exist_ok=True)
 
     model = keras.models.load_model(model_path)
 
-    save_model_weights(model_name, model_dir, model)
-    save_model_architecture(model_name, model_dir, model)
+    save_model_weights(project_name, project_dir, model)
+    save_model_architecture(project_name, project_dir, model)

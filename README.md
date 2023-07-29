@@ -1,4 +1,5 @@
 <div align="center">
+<img src="https://aigenprotocol.com/static/media/aigen-logo-light.fad5403b0fa280336867e8ea8400db40.svg" />
 <h2> AigenML </h2>
 <h3>
 Aigen's artificial intelligence library to extract model weights and create shards based on the number of ainfts specified

@@ -33,8 +33,8 @@ def get_small_large_files(weights_path, minimum_split_size, maximum_split_size):
 
 
 def split_large_files(project_name, project_dir, minimum_split_size, maximum_split_size):
-    weights_path = os.path.join(project_dir, project_name, "weights")
-    shards_dir = os.path.join(project_dir, project_name, "shards")
+    weights_path = os.path.join(project_dir, "weights")
+    shards_dir = os.path.join(project_dir, "shards")
     os.makedirs(shards_dir, exist_ok=True)
     all_files = get_small_large_files(weights_path, minimum_split_size, maximum_split_size)
 
@@ -100,8 +100,8 @@ def split_large_files(project_name, project_dir, minimum_split_size, maximum_spl
 
 
 def merge_small_files(project_name, project_dir, minimum_split_size, maximum_split_size):
-    shards_dir = os.path.join(project_dir, project_name, "shards")
-    final_shards_dir = os.path.join(project_dir, project_name, "final_shards")
+    shards_dir = os.path.join(project_dir, "shards")
+    final_shards_dir = os.path.join(project_dir, "final_shards")
     os.makedirs(final_shards_dir, exist_ok=True)
 
     all_files = glob.glob(os.path.join(shards_dir, "*"))
@@ -139,7 +139,7 @@ def merge_small_files(project_name, project_dir, minimum_split_size, maximum_spl
 
 def create_shards(project_name, project_dir, no_of_ainfts):
     print("Creating shards")
-    model_size = get_model_size(os.path.join(project_dir, project_name))
+    model_size = get_model_size(project_dir)
     maximum_split_size = math.ceil(model_size / no_of_ainfts)
     minimum_split_size = math.floor(model_size / no_of_ainfts)
 

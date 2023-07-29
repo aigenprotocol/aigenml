@@ -21,31 +21,32 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     project_name = slugify(args.name)
+    project_dir = os.path.join(os.environ.get("PROJECTS_DIR"), project_name)
 
     # create project directory
-    os.makedirs(os.path.join(os.environ.get("PROJECTS_DIR"), project_name), exist_ok=True)
+    os.makedirs(project_dir, exist_ok=True)
 
     if args.action == "create_shards":
         # remove directory
-        if os.path.exists(os.path.join(os.environ.get("PROJECTS_DIR"), project_name)):
-            shutil.rmtree(os.path.join(os.environ.get("PROJECTS_DIR"), project_name))
+        if os.path.exists(project_dir):
+            shutil.rmtree(project_dir)
 
         # extracts and save model weights
-        save_model(project_name=project_name, project_dir=os.environ.get("PROJECTS_DIR"), model_path=args.model_path)
+        save_model(project_name=project_name, project_dir=project_dir, model_path=args.model_path)
         print("Model weights extracted successfully!")
 
         # create shards
-        create_shards(project_name=project_name, project_dir=os.environ.get("PROJECTS_DIR"),
+        create_shards(project_name=project_name, project_dir=project_dir,
                       no_of_ainfts=args.no_of_ainfts)
         print("Model shards created successfully!")
 
         print("Project name:", project_name)
-        print("Project directory:", os.path.join(os.environ.get("PROJECTS_DIR"), project_name))
+        print("Project directory:", project_dir)
     elif args.action == "merge_shards":
-        merge_shards(args.name)
+        merge_shards(project_name=project_name, project_dir=project_dir)
         print("Shards merged successfully!")
     elif args.action == "load_model":
-        model = load_model_weights(project_name=args.name)
+        model = load_model_weights(project_name=project_name, project_dir=project_dir)
         print("Model loaded successfully!:", model)
     else:
         print("Invalid action")

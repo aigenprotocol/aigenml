@@ -5,13 +5,13 @@ import os
 import pandas as pd
 
 
-def aggregate_shards(model_name):
+def aggregate_shards(project_name, project_dir):
     print("\nAggregating shards...")
-    aggregated_shards_dir = os.path.join(os.path.join(os.environ.get("PROJECTS_DIR"), model_name), "aggregated_shards")
-    downloaded_shards_dir = os.path.join(os.path.join(os.environ.get("PROJECTS_DIR"), model_name), "downloaded_shards")
+    aggregated_shards_dir = os.path.join(project_dir, "aggregated_shards")
+    downloaded_shards_dir = os.path.join(project_dir, "downloaded_shards")
     os.makedirs(aggregated_shards_dir, exist_ok=True)
 
-    filepaths = glob.glob(os.path.join(downloaded_shards_dir, "{}_shard_*".format(model_name)))
+    filepaths = glob.glob(os.path.join(downloaded_shards_dir, "{}_shard_*".format(project_name)))
 
     for index, filepath in enumerate(filepaths):
         print("File processed {} out of {}".format(index + 1, len(filepaths)))
@@ -35,10 +35,10 @@ def aggregate_shards(model_name):
                     json.dump({"layer_name": layer_dict['layer_name'], "weights": existing_weights}, fq)
 
 
-def concatenate_arrays(model_name):
+def concatenate_arrays(project_dir):
     print("\nConcatenating arrays...")
-    aggregated_shards_dir = os.path.join(os.path.join(os.environ.get("PROJECTS_DIR"), model_name), "aggregated_shards")
-    final_weights_dir = os.path.join(os.path.join(os.environ.get("PROJECTS_DIR"), model_name), "final_weights")
+    aggregated_shards_dir = os.path.join(project_dir, "aggregated_shards")
+    final_weights_dir = os.path.join(project_dir, "final_weights")
     os.makedirs(final_weights_dir, exist_ok=True)
 
     filepaths = glob.glob(os.path.join(aggregated_shards_dir, "*"))
@@ -78,6 +78,6 @@ def concatenate_arrays(model_name):
                     json.dump(layer_dict, fp)
 
 
-def merge_shards(model_name):
-    aggregate_shards(model_name)
-    concatenate_arrays(model_name)
+def merge_shards(project_name, project_dir):
+    aggregate_shards(project_name, project_dir)
+    concatenate_arrays(project_dir)

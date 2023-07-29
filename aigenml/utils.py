@@ -5,13 +5,13 @@ import re
 import unicodedata
 
 
-def get_model_size(model_dir):
+def get_model_size(project_dir):
     """
     Get model size
-    :param model_dir: model directory
+    :param project_dir: project directory
     :return: model size
     """
-    files = glob.glob(os.path.join(model_dir, "weights/*"))
+    files = glob.glob(os.path.join(project_dir, "weights/*"))
     total_size = 0
     for file in files:
         total_size += os.path.getsize(file)

@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2022 Aigen Protocol
+Copyright (c) 2023 Aigen Protocol
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

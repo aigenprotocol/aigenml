@@ -52,8 +52,9 @@ def save_model(project_name, project_dir, model_path):
     save_model_architecture(project_name, project_dir, model)
 
 
-def save_model_create_shards(project_name, project_dir,
+def save_model_create_shards(project_name, project_id, project_dir,
                              model_path, no_of_ainfts):
     save_model(project_name=project_name, project_dir=project_dir,
                model_path=model_path)
-    create_shards(project_name=project_name, project_dir=project_dir, no_of_ainfts=no_of_ainfts)
+    create_shards(project_name=project_name, project_id=project_id,
+                  project_dir=project_dir, no_of_ainfts=no_of_ainfts)

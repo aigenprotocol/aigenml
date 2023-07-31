@@ -99,7 +99,7 @@ def split_large_files(project_name, project_dir, minimum_split_size, maximum_spl
             split_index += 1
 
 
-def merge_small_files(project_name, project_dir, minimum_split_size, maximum_split_size):
+def merge_small_files(project_name, project_id, project_dir, minimum_split_size, maximum_split_size):
     shards_dir = os.path.join(project_dir, "shards")
     final_shards_dir = os.path.join(project_dir, "final_shards")
     os.makedirs(final_shards_dir, exist_ok=True)
@@ -120,7 +120,8 @@ def merge_small_files(project_name, project_dir, minimum_split_size, maximum_spl
             for file_path, size in merge_files_sizes.items():
                 with open(file_path, "r") as f:
                     final_merge.extend(json.load(f))
-            with open("{}/{}_shard_{}.json".format(final_shards_dir, project_name, split_index), "w") as f:
+            with open("{}/{}_{}_shard_{}.json".format(final_shards_dir, project_name, project_id, split_index),
+                      "w") as f:
                 json.dump(final_merge, f)
             split_index += 1
             merge_files_sizes = {}
@@ -132,16 +133,16 @@ def merge_small_files(project_name, project_dir, minimum_split_size, maximum_spl
         with open(file_path, "r") as f:
             final_merge.extend(json.load(f))
 
-    with open("{}/{}_shard_{}.json".format(final_shards_dir, project_name, split_index), "w") as f:
+    with open("{}/{}_{}_shard_{}.json".format(final_shards_dir, project_name, project_id, split_index), "w") as f:
         json.dump(final_merge, f)
     split_index += 1
 
 
-def create_shards(project_name, project_dir, no_of_ainfts):
+def create_shards(project_name, project_id, project_dir, no_of_ainfts):
     print("Creating shards")
     model_size = get_model_size(project_dir)
     maximum_split_size = math.ceil(model_size / no_of_ainfts)
     minimum_split_size = math.floor(model_size / no_of_ainfts)
 
     split_large_files(project_name, project_dir, minimum_split_size, maximum_split_size)
-    merge_small_files(project_name, project_dir, minimum_split_size, maximum_split_size)
+    merge_small_files(project_name, project_id, project_dir, minimum_split_size, maximum_split_size)
